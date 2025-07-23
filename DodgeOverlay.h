@@ -18,10 +18,16 @@ namespace DodgeOverlay {
         float m_radius = 1.0f;
         int m_circleSegments = 4;
         bool m_fShowNums = true;
+        bool m_fShowLastDodgeMarker = true;
+        bool m_fDidDodge = false;
+        bool m_fClearLastDodgeMarkerAfterJumping = true;
+        float m_lastDodgeMarkerThickness = 1.0f;
         ImColor m_stickBorderColor = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
         ImColor m_stickLocationColor = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
+        ImColor m_lastDodgeMarkerColor = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
         ImColor m_dodgeDeadzoneColor = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
         ImVec2 m_stickLocation = ImVec2();
+        ImVec2 m_lastDodgeMarker = ImVec2();
         float m_stickLocationSize = 5.0f;
         float m_dodgeDeadzone = 0.0f;
         float m_dodgeDeadzoneRoll = 0.0f;

@@ -73,6 +73,39 @@ void DodgeOverlayPlugin::onLoad() {
         });
     m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
 #pragma endregion
+#pragma region dodgeoverlayShowLastDodgeMarker
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayShowLastDodgeMarker")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayShowLastDodgeMarker", "1");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            m_fShowLastDodgeMarker = now.getBoolValue();
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
+#pragma region dodgeoverlayClearLastDodgeMarkerAfterJumping
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayClearLastDodgeMarkerAfterJumping")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayClearLastDodgeMarkerAfterJumping", "1");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            m_fClearLastDodgeMarkerAfterJumping = now.getBoolValue();
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
+#pragma region dodgeoverlayShowLastDodgeMarkerThickness
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayLastDodgeMarkerThickness")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayLastDodgeMarkerThickness", "1.0");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            m_lastDodgeMarkerThickness = now.getFloatValue();
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
 #pragma region dodgeoverlayStickBorderColor
     if((tempCvar = cvarManager->getCvar("dodgeoverlayStickBorderColor")).IsNull()) {
         tempCvar = cvarManager->registerCvar("dodgeoverlayStickBorderColor", "(1.0, 1.0, 1.0, 1.0)");
@@ -105,6 +138,18 @@ void DodgeOverlayPlugin::onLoad() {
         [this](std::string old, CVarWrapper now) {
             LinearColor color = now.getColorValue();
             m_dodgeDeadzoneColor = ImColor(color.R, color.G, color.B, color.A);
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
+#pragma region dodgeoverlayLastDodgeMarkerColor
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayLastDodgeMarkerColor")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayLastDodgeMarkerColor", "(1.0, 1.0, 1.0, 1.0)");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            LinearColor color = now.getColorValue();
+            m_lastDodgeMarkerColor = ImColor(color.R, color.G, color.B, color.A);
             writeCfg();
         });
     m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
@@ -176,6 +221,34 @@ void DodgeOverlayPlugin::onLoad() {
             }
         });
 
+    gameWrapper->HookEvent("Function TAGame.CarComponent_Dodge_TA.CanActivate",
+        [this](std::string) {
+                    // LastDodgeMarker
+                    // persistent marker
+                    // fade time for the marker
+                    // color marker
+                    // different shapes
+                    // scale the marker
+                    m_lastDodgeMarker = m_stickLocation;
+                    m_fDidDodge = true;
+        });
+
+    gameWrapper->HookEvent("Function TAGame.Car_TA.CanActivateJump",
+        [this](std::string) {
+                    // LastDodgeMarker
+                    // persistent marker - CHECK
+                    // fade time for the marker
+                    // color marker - CHECK
+                    // different shapes
+                    // scale the marker
+                    // thickness the marker :) - CHECK
+                    m_lastDodgeMarker = m_stickLocation;
+                    if (m_fClearLastDodgeMarkerAfterJumping) {
+                          m_fDidDodge = false;
+                    }
+        });
+    
+
     gameWrapper->HookEvent("Function TAGame.GFxData_Settings_TA.SetDodgeInputThreshold",
         [this](std::string) {
             m_dodgeDeadzone = gameWrapper->GetSettings().GetGamepadSettings().DodgeInputThreshold;
@@ -210,7 +283,7 @@ void DodgeOverlayPlugin::RenderSettings() {
             m_localCvars.at("dodgeoverlayDodgeDeadzoneBorderThickness").setValue(m_dodgeDeadzoneBorderThickness);
         };
     }
-    if(Checkbox("Show outputs nums", &m_fShowNums)) {
+    if (Checkbox("Show outputs nums", &m_fShowNums)) {
         m_localCvars.at("dodgeoverlayShowNums").setValue(m_fShowNums);
     }
     if (DragFloat("Background color alpha when deadzone has been crossed", &m_dodgeDeadzoneCrossedAlpha, 0.01f, 0.0f, 1.0f, "%.2f")) {
@@ -247,6 +320,30 @@ void DodgeOverlayPlugin::RenderSettings() {
             color.B = m_dodgeDeadzoneColor.Value.z;
             color.A = m_dodgeDeadzoneColor.Value.w;
             m_localCvars.at("dodgeoverlayDodgeDeadzoneColor").setValue(color);
+        };
+    }
+
+    if (Checkbox("Mark on overlay where last dodge happened", &m_fShowLastDodgeMarker)) {
+        m_localCvars.at("dodgeoverlayShowLastDodgeMarker").setValue(m_fShowLastDodgeMarker);
+    }
+    if (m_fShowLastDodgeMarker) {
+        SameLine();
+        if (Checkbox("Clear mark after jumping", &m_fClearLastDodgeMarkerAfterJumping)) {
+              m_localCvars.at("dodgeoverlayClearLastDodgeMarkerAfterJumping").setValue(m_fClearLastDodgeMarkerAfterJumping);
+        }
+        if(DragFloat("Last dodge marker thickness", &m_lastDodgeMarkerThickness, 0.1f, 0.1f, 10.0f, "%.1f")) {
+            m_localCvars.at("dodgeoverlayLastDodgeMarkerThickness").setValue(m_lastDodgeMarkerThickness);
+        };
+    }
+    {
+        float* colors[4] = { &m_lastDodgeMarkerColor.Value.x, &m_lastDodgeMarkerColor.Value.y, &m_lastDodgeMarkerColor.Value.z, &m_lastDodgeMarkerColor.Value.w };
+        if (ColorEdit4("Last dodge marker color", *colors, ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_AlphaBar)) {
+            LinearColor color = LinearColor();
+            color.R = m_lastDodgeMarkerColor.Value.x;
+            color.G = m_lastDodgeMarkerColor.Value.y;
+            color.B = m_lastDodgeMarkerColor.Value.z;
+            color.A = m_lastDodgeMarkerColor.Value.w;
+            m_localCvars.at("dodgeoverlayLastDodgeMarkerColor").setValue(color);
         };
     }
 
@@ -302,6 +399,12 @@ void DodgeOverlayPlugin::RenderImGui() {
         if (m_fShowNums) {
             drawList->AddText(stickCenter + ImVec2(-m_radius, m_radius), m_stickLocationColor, ("X: " + std::format("{:.2f}", m_stickLocation.x)).c_str());
             drawList->AddText(stickCenter + ImVec2(0, m_radius), m_stickLocationColor, ("Y: " + std::format("{:.2f}", m_stickLocation.y)).c_str());
+        }
+        if (m_fShowLastDodgeMarker && m_fDidDodge) {
+              // switch(m_LastDodgeMarkerShape) {
+              // X shape
+              drawList->AddLine(stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius - 5, -m_lastDodgeMarker.y * m_radius - 5), stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius + 5, -m_lastDodgeMarker.y * m_radius + 5), m_lastDodgeMarkerColor, m_lastDodgeMarkerThickness * m_finalScale);
+              drawList->AddLine(stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius - 5, -m_lastDodgeMarker.y * m_radius + 5), stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius + 5, -m_lastDodgeMarker.y * m_radius - 5), m_lastDodgeMarkerColor, m_lastDodgeMarkerThickness * m_finalScale);
         }
 
         PopStyleVar(2);
