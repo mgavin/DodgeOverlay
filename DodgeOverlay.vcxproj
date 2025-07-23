@@ -147,7 +147,8 @@
       <AdditionalDependencies>pluginsdk.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
-      <Command>copy /Y "$(TargetDir)$(ProjectName).dll" "$(BakkesModPath)\plugins"</Command>
+      <Command> "$(BakkesModPath)\bakkesmodsdk\bakkesmod-patch.exe" "$(TargetPath)" </Command>
+      <Message>copy /Y "$(TargetDir)$(ProjectName).dll" "$(BakkesModPath)\plugins"</Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

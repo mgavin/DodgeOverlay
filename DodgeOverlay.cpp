@@ -164,9 +164,8 @@ void DodgeOverlayPlugin::onLoad() {
         [this](std::string) {
             CarWrapper car = gameWrapper->GetLocalCar();
             if(car) {
-                PlayerControllerWrapper pc = car.GetPlayerController();
-                if(pc) {
-                    ControllerInput inputs = pc.GetVehicleInput();
+                    ControllerInput inputs = car.GetInput();
+
                     m_stickLocation.x = inputs.DodgeStrafe + inputs.Roll;
                     m_stickLocation.y = inputs.DodgeForward;
                     m_dodgeDeadzoneRoll = 0.0f;
@@ -174,7 +173,6 @@ void DodgeOverlayPlugin::onLoad() {
                         m_stickLocation.x = std::max(std::min(m_stickLocation.x, 1.0f), -1.0f);
                         m_dodgeDeadzoneRoll = m_dodgeDeadzone;
                     }
-                }
             }
         });
 
