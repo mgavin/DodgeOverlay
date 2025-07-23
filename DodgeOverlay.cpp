@@ -42,7 +42,7 @@ void DodgeOverlayPlugin::onLoad() {
 #pragma endregion
 #pragma region dodgeoverlayWinYPos
     if((tempCvar = cvarManager->getCvar("dodgeoverlayWinYPos")).IsNull()) {
-        tempCvar = cvarManager->registerCvar("dodgeOverlayWinYPos", "0.0");
+        tempCvar = cvarManager->registerCvar("dodgeoverlayWinYPos", "0.0");
     }
     tempCvar.addOnValueChanged(
         [this](std::string old, CVarWrapper now) {
