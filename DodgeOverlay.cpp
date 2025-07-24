@@ -282,17 +282,9 @@ void DodgeOverlayPlugin::onLoad() {
         });
 
     gameWrapper->HookEvent("Function CarComponent_Dodge_TA.Active.BeginState",
-        [this](std::string) { // 
-          // LastDodgeMarker
-          // persistent marker - CHECK
-          // fade time for the marker - CHECK
-          // color marker - CHECK
-          // thickness the marker :) - CHECK
-          // different shapes - CHECK
-          // scale the marker - CHECK
-                // DIFFERENTIATE THE MARKER BETWEEN DODGES AND DOUBLE JUMPS? [ ] MARK ONLY DODGE [ ] MARK ONLY DOUBLE JUMP
+        [this](std::string) {
           CarWrapper car = gameWrapper->GetLocalCar();
-          // somehow car.GetbJumped() is not good enough for 
+          // somehow car.GetbJumped() is not good enough for
           // checking if the local car has jumped at this point
           if (car && car.GetInput().Jumped) {
                 m_lastDodgeMarkerColor.Value.w = 1.0f;
@@ -308,8 +300,6 @@ void DodgeOverlayPlugin::onLoad() {
           }
 
           CarWrapper car = gameWrapper->GetLocalCar();
-          // somehow car.GetbJumped() is not good enough for 
-          // checking if the local car has jumped at this point
           if (car && car.GetInput().Jumped) {
                 m_lastDodgeMarkerColor.Value.w = 1.0f;
                 m_lastDodgeMarker = m_stickLocation;
@@ -320,8 +310,6 @@ void DodgeOverlayPlugin::onLoad() {
     gameWrapper->HookEvent("Function CarComponent_Jump_TA.Active.BeginState",
         [this](std::string) {
           CarWrapper car = gameWrapper->GetLocalCar();
-          // somehow car.GetbJumped() is not good enough for
-          // checking if the local car has jumped at this point
           if (car && car.GetInput().Jumped) {
                 if (m_fClearLastDodgeMarkerAfterJumping && !m_fIsInGameReplay) {
                       m_fClearDodgeMarker = true;
