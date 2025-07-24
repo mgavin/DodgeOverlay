@@ -95,7 +95,18 @@ void DodgeOverlayPlugin::onLoad() {
         });
     m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
 #pragma endregion
-#pragma region dodgeoverlayShowLastDodgeMarkerThickness
+#pragma region dodgeoverlayLastDodgeMarkerShape
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayLastDodgeMarkerShape")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayLastDodgeMarkerShape", "1");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            m_lastDodgeMarkerShapeSelection = std::clamp(now.getIntValue(), 0, 2);
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
+#pragma region dodgeoverlayLastDodgeMarkerThickness
     if((tempCvar = cvarManager->getCvar("dodgeoverlayLastDodgeMarkerThickness")).IsNull()) {
         tempCvar = cvarManager->registerCvar("dodgeoverlayLastDodgeMarkerThickness", "1.0");
     }
@@ -255,7 +266,7 @@ void DodgeOverlayPlugin::onLoad() {
           // fade time for the marker - CHECK
           // color marker - CHECK
           // thickness the marker :) - CHECK
-          // DIFFERENTIATE THE MARKER BETWEEN DODGES AND DOUBLE JUMPS?
+          // DIFFERENTIATE THE MARKER BETWEEN DODGES AND DOUBLE JUMPS? [ ] MARK ONLY DODGE [ ] MARK ONLY DOUBLE JUMP
           // different shapes
           // scale the marker
           CarWrapper car = gameWrapper->GetLocalCar();
@@ -368,6 +379,7 @@ void DodgeOverlayPlugin::RenderSettings() {
         if (Checkbox("Clear mark after jumping", &m_fClearLastDodgeMarkerAfterJumping)) {
               m_localCvars.at("dodgeoverlayClearLastDodgeMarkerAfterJumping").setValue(m_fClearLastDodgeMarkerAfterJumping);
         }
+        Combo("Select the shape of the marker", &m_lastDodgeMarkerShapeSelection, m_lastDodgeMarkerShapeChoices, IM_ARRAYSIZE(m_lastDodgeMarkerShapeChoices));
         if(DragFloat("Last dodge marker thickness", &m_lastDodgeMarkerThickness, 0.1f, 0.1f, 10.0f, "%.1f")) {
             m_localCvars.at("dodgeoverlayLastDodgeMarkerThickness").setValue(m_lastDodgeMarkerThickness);
         }
@@ -447,16 +459,36 @@ void DodgeOverlayPlugin::RenderImGui() {
         }
 
         if (m_fShowLastDodgeMarker && !m_fClearDodgeMarker) {
-              // switch(m_LastDodgeMarkerShape) {
-              // X shape
               if (m_fFadeLastDodgeMarker) {
                     m_lastDodgeMarkerColor.Value.w -= m_lastDodgeMarkerFadeFactor;
                     if (m_lastDodgeMarkerColor.Value.w - 0.f <= 10e-6) {
                           m_fClearDodgeMarker = true;
                     }
               }
-              drawList->AddLine(stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius - 5, -m_lastDodgeMarker.y * m_radius - 5), stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius + 5, -m_lastDodgeMarker.y * m_radius + 5), m_lastDodgeMarkerColor, m_lastDodgeMarkerThickness * m_finalScale);
-              drawList->AddLine(stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius - 5, -m_lastDodgeMarker.y * m_radius + 5), stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius + 5, -m_lastDodgeMarker.y * m_radius - 5), m_lastDodgeMarkerColor, m_lastDodgeMarkerThickness * m_finalScale);
+
+              switch(m_lastDodgeMarkerShapeSelection) {
+                    case LASTDODGEMARKERSHAPE::CROSS:
+                        // X shape
+                        drawList->AddLine(stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius - m_lastDodgeMarkerScale, -m_lastDodgeMarker.y * m_radius - m_lastDodgeMarkerScale), stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius + m_lastDodgeMarkerScale, -m_lastDodgeMarker.y * m_radius + m_lastDodgeMarkerScale), m_lastDodgeMarkerColor, m_lastDodgeMarkerThickness * m_finalScale);
+                        drawList->AddLine(stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius - m_lastDodgeMarkerScale, -m_lastDodgeMarker.y * m_radius + m_lastDodgeMarkerScale), stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius + m_lastDodgeMarkerScale, -m_lastDodgeMarker.y * m_radius - m_lastDodgeMarkerScale), m_lastDodgeMarkerColor, m_lastDodgeMarkerThickness * m_finalScale);
+                        break;
+
+                    case LASTDODGEMARKERSHAPE::CIRCLE:
+                        drawList->AddCircle(stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius, -m_lastDodgeMarker.y * m_radius), m_lastDodgeMarkerScale * 1.0f, m_lastDodgeMarkerColor, 12, m_lastDodgeMarkerThickness * m_finalScale);
+                        break;
+
+                    case LASTDODGEMARKERSHAPE::SQUARE:
+                        drawList->AddRect(stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius - m_lastDodgeMarkerScale, -m_lastDodgeMarker.y * m_radius - m_lastDodgeMarkerScale), stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius + m_lastDodgeMarkerScale, -m_lastDodgeMarker.y * m_radius + m_lastDodgeMarkerScale), m_lastDodgeMarkerColor, 0.0f, 15, m_lastDodgeMarkerThickness * m_finalScale);
+                        break;
+
+                    case LASTDODGEMARKERSHAPE::FILLEDCIRCLE:
+                        drawList->AddCircleFilled(stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius, -m_lastDodgeMarker.y * m_radius), m_lastDodgeMarkerScale * 1.0f, m_lastDodgeMarkerColor);
+                        break;
+
+                    case LASTDODGEMARKERSHAPE::FILLEDSQUARE:
+                        drawList->AddRectFilled(stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius - m_lastDodgeMarkerScale, -m_lastDodgeMarker.y * m_radius - m_lastDodgeMarkerScale), stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius + m_lastDodgeMarkerScale, -m_lastDodgeMarker.y * m_radius + m_lastDodgeMarkerScale), m_lastDodgeMarkerColor, 0.0f, 15);
+                        break;
+              }
         }
 
         PopStyleVar(2);

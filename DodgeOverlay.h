@@ -24,6 +24,9 @@ namespace DodgeOverlay {
         bool m_fFadeLastDodgeMarker = false;
         bool m_fIsInGameReplay = false;
         float m_lastDodgeMarkerThickness = 1.0f;
+        const char* m_lastDodgeMarkerShapeChoices[5] = {"Circle", "Cross", "Square", "Filled Circle", "Filled Square"};
+        enum LASTDODGEMARKERSHAPE { CIRCLE, CROSS, SQUARE, FILLEDCIRCLE, FILLEDSQUARE };
+        int m_lastDodgeMarkerShapeSelection = LASTDODGEMARKERSHAPE::CROSS;
         int m_lastDodgeMarkerFadeTicks = 200;
         float m_lastDodgeMarkerFadeFactor = 0.0f;
         ImColor m_stickBorderColor = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
