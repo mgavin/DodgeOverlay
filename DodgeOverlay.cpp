@@ -101,7 +101,18 @@ void DodgeOverlayPlugin::onLoad() {
     }
     tempCvar.addOnValueChanged(
         [this](std::string old, CVarWrapper now) {
-            m_lastDodgeMarkerShapeSelection = std::clamp(now.getIntValue(), 0, 2);
+            m_lastDodgeMarkerShapeSelection = std::clamp(now.getIntValue(), 0, 4);
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
+#pragma region dodgeoverlayLastDodgeMarkerScale
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayLastDodgeMarkerScale")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayLastDodgeMarkerScale", "5");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            m_lastDodgeMarkerScale = now.getIntValue();
             writeCfg();
         });
     m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
@@ -267,8 +278,8 @@ void DodgeOverlayPlugin::onLoad() {
           // color marker - CHECK
           // thickness the marker :) - CHECK
           // DIFFERENTIATE THE MARKER BETWEEN DODGES AND DOUBLE JUMPS? [ ] MARK ONLY DODGE [ ] MARK ONLY DOUBLE JUMP
-          // different shapes
-          // scale the marker
+          // different shapes - CHECK
+          // scale the marker - CHECK
           CarWrapper car = gameWrapper->GetLocalCar();
           // somehow car.GetbJumped() is not good enough for 
           // checking if the local car has jumped at this point
@@ -379,7 +390,12 @@ void DodgeOverlayPlugin::RenderSettings() {
         if (Checkbox("Clear mark after jumping", &m_fClearLastDodgeMarkerAfterJumping)) {
               m_localCvars.at("dodgeoverlayClearLastDodgeMarkerAfterJumping").setValue(m_fClearLastDodgeMarkerAfterJumping);
         }
-        Combo("Select the shape of the marker", &m_lastDodgeMarkerShapeSelection, m_lastDodgeMarkerShapeChoices, IM_ARRAYSIZE(m_lastDodgeMarkerShapeChoices));
+        if (Combo("Select the shape of the marker", &m_lastDodgeMarkerShapeSelection, m_lastDodgeMarkerShapeChoices, IM_ARRAYSIZE(m_lastDodgeMarkerShapeChoices))) {
+              m_localCvars.at("dodgeoverlayLastDodgeMarkerShape").setValue(m_lastDodgeMarkerShapeSelection);
+        }
+        if (DragInt("Last dodge marker scale", &m_lastDodgeMarkerScale, 1, 1, 10, "%d")) {
+            m_localCvars.at("dodgeoverlayLastDodgeMarkerScale").setValue(m_lastDodgeMarkerScale);
+        }
         if(DragFloat("Last dodge marker thickness", &m_lastDodgeMarkerThickness, 0.1f, 0.1f, 10.0f, "%.1f")) {
             m_localCvars.at("dodgeoverlayLastDodgeMarkerThickness").setValue(m_lastDodgeMarkerThickness);
         }
