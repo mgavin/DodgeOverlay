@@ -19,6 +19,7 @@ namespace DodgeOverlay {
         int m_circleSegments = 4;
         bool m_fShowNums = true;
         bool m_fShowLastDodgeMarker = true;
+        bool m_fShowLastDoubleJumpMarker = true;
         bool m_fClearDodgeMarker = false;
         bool m_fClearLastDodgeMarkerAfterJumping = true;
         bool m_fFadeLastDodgeMarker = false;

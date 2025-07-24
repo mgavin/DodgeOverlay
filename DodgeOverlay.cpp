@@ -84,6 +84,17 @@ void DodgeOverlayPlugin::onLoad() {
         });
     m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
 #pragma endregion
+#pragma region dodgeoverlayShowLastDoubleJumpMarker
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayShowLastDoubleJumpMarker")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayShowLastDoubleJumpMarker", "1");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            m_fShowLastDoubleJumpMarker = now.getBoolValue();
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
 #pragma region dodgeoverlayClearLastDodgeMarkerAfterJumping
     if((tempCvar = cvarManager->getCvar("dodgeoverlayClearLastDodgeMarkerAfterJumping")).IsNull()) {
         tempCvar = cvarManager->registerCvar("dodgeoverlayClearLastDodgeMarkerAfterJumping", "1");
@@ -270,16 +281,16 @@ void DodgeOverlayPlugin::onLoad() {
             }
         });
 
-    gameWrapper->HookEvent("Function TAGame.CarComponent_Dodge_TA.CanActivate",
+    gameWrapper->HookEvent("Function CarComponent_Dodge_TA.Active.BeginState",
         [this](std::string) { // 
           // LastDodgeMarker
           // persistent marker - CHECK
           // fade time for the marker - CHECK
           // color marker - CHECK
           // thickness the marker :) - CHECK
-          // DIFFERENTIATE THE MARKER BETWEEN DODGES AND DOUBLE JUMPS? [ ] MARK ONLY DODGE [ ] MARK ONLY DOUBLE JUMP
           // different shapes - CHECK
           // scale the marker - CHECK
+                // DIFFERENTIATE THE MARKER BETWEEN DODGES AND DOUBLE JUMPS? [ ] MARK ONLY DODGE [ ] MARK ONLY DOUBLE JUMP
           CarWrapper car = gameWrapper->GetLocalCar();
           // somehow car.GetbJumped() is not good enough for 
           // checking if the local car has jumped at this point
@@ -289,6 +300,23 @@ void DodgeOverlayPlugin::onLoad() {
                 m_fClearDodgeMarker       = false;
           }
     });
+
+    gameWrapper->HookEvent("Function CarComponent_DoubleJump_TA.Active.BeginState",
+        [this](std::string) {
+          if (!m_fShowLastDoubleJumpMarker) {
+            return;
+          }
+
+          CarWrapper car = gameWrapper->GetLocalCar();
+          // somehow car.GetbJumped() is not good enough for 
+          // checking if the local car has jumped at this point
+          if (car && car.GetInput().Jumped) {
+                m_lastDodgeMarkerColor.Value.w = 1.0f;
+                m_lastDodgeMarker = m_stickLocation;
+                m_fClearDodgeMarker       = false;
+          }
+    });
+
     gameWrapper->HookEvent("Function CarComponent_Jump_TA.Active.BeginState",
         [this](std::string) {
           CarWrapper car = gameWrapper->GetLocalCar();
@@ -382,16 +410,19 @@ void DodgeOverlayPlugin::RenderSettings() {
         };
     }
 
-    if (Checkbox("Mark on overlay where last dodge (or double jump) happened", &m_fShowLastDodgeMarker)) {
+    if (Checkbox("Mark on overlay where last dodge happened", &m_fShowLastDodgeMarker)) {
         m_localCvars.at("dodgeoverlayShowLastDodgeMarker").setValue(m_fShowLastDodgeMarker);
     }
     if (m_fShowLastDodgeMarker) {
         SameLine();
+        if (Checkbox("(including double jumps)", &m_fShowLastDoubleJumpMarker)) {
+            m_localCvars.at("dodgeoverlayShowLastDoubleJumpMarker").setValue(m_fShowLastDoubleJumpMarker);
+        }
         if (Checkbox("Clear mark after jumping", &m_fClearLastDodgeMarkerAfterJumping)) {
-              m_localCvars.at("dodgeoverlayClearLastDodgeMarkerAfterJumping").setValue(m_fClearLastDodgeMarkerAfterJumping);
+            m_localCvars.at("dodgeoverlayClearLastDodgeMarkerAfterJumping").setValue(m_fClearLastDodgeMarkerAfterJumping);
         }
         if (Combo("Select the shape of the marker", &m_lastDodgeMarkerShapeSelection, m_lastDodgeMarkerShapeChoices, IM_ARRAYSIZE(m_lastDodgeMarkerShapeChoices))) {
-              m_localCvars.at("dodgeoverlayLastDodgeMarkerShape").setValue(m_lastDodgeMarkerShapeSelection);
+            m_localCvars.at("dodgeoverlayLastDodgeMarkerShape").setValue(m_lastDodgeMarkerShapeSelection);
         }
         if (DragInt("Last dodge marker scale", &m_lastDodgeMarkerScale, 1, 1, 10, "%d")) {
             m_localCvars.at("dodgeoverlayLastDodgeMarkerScale").setValue(m_lastDodgeMarkerScale);
@@ -474,7 +505,7 @@ void DodgeOverlayPlugin::RenderImGui() {
             drawList->AddText(stickCenter + ImVec2(0, m_radius), m_stickLocationColor, ("Y: " + std::format("{:.2f}", m_stickLocation.y)).c_str());
         }
 
-        if (m_fShowLastDodgeMarker && !m_fClearDodgeMarker) {
+        if ((m_fShowLastDodgeMarker || m_fShowLastDoubleJumpMarker) && !m_fClearDodgeMarker) {
               if (m_fFadeLastDodgeMarker) {
                     m_lastDodgeMarkerColor.Value.w -= m_lastDodgeMarkerFadeFactor;
                     if (m_lastDodgeMarkerColor.Value.w - 0.f <= 10e-6) {
