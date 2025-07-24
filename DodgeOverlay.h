@@ -19,9 +19,13 @@ namespace DodgeOverlay {
         int m_circleSegments = 4;
         bool m_fShowNums = true;
         bool m_fShowLastDodgeMarker = true;
-        bool m_fDidDodge = false;
+        bool m_fClearDodgeMarker = false;
         bool m_fClearLastDodgeMarkerAfterJumping = true;
+        bool m_fFadeLastDodgeMarker = false;
+        bool m_fIsInGameReplay = false;
         float m_lastDodgeMarkerThickness = 1.0f;
+        int m_lastDodgeMarkerFadeTicks = 200;
+        float m_lastDodgeMarkerFadeFactor = 0.0f;
         ImColor m_stickBorderColor = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
         ImColor m_stickLocationColor = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
         ImColor m_lastDodgeMarkerColor = ImColor(1.0f, 1.0f, 1.0f, 1.0f);
