@@ -153,6 +153,39 @@ void DodgeOverlayPlugin::onLoad() {
         });
     m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
 #pragma endregion
+#pragma region dodgeoverlayShowFlipCancelMeter
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayShowFlipCancelMeter")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayShowFlipCancelMeter", "1");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            m_fShowFlipCancelMeter = now.getBoolValue();
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
+#pragma region dodgeoverlayFlipFlipCancelMeter
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayFlipFlipCancelMeter")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayFlipFlipCancelMeter", "0");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            m_fFlipFlipCancelMeter = now.getBoolValue();
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
+#pragma region dodgeoverlayShowFlipCancelMeterPosition
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayShowFlipCancelMeterPosition")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayShowFlipCancelMeterPosition", "0");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            m_flipCancelMeterPosition = now.getIntValue();
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
 #pragma endregion
 
     if (std::ifstream(m_configurationFilePath)) {
@@ -173,6 +206,23 @@ void DodgeOverlayPlugin::onLoad() {
                         m_stickLocation.x = std::max(std::min(m_stickLocation.x, 1.0f), -1.0f);
                         m_dodgeDeadzoneRoll = m_dodgeDeadzone;
                     }
+
+                    m_amDodging = car.IsDodging();
+                    m_theTime = car.GetWorldInfo().GetRealTimeSeconds(); 
+            }
+        });
+
+    gameWrapper->HookEvent("Function CarComponent_Dodge_TA.Active.BeginState",
+        [this](std::string) {
+            CarWrapper car = gameWrapper->GetLocalCar();
+            // somehow car.GetbJumped() is not good enough for
+            // checking if the local car has jumped at this point
+            if (car && car.GetInput().Jumped) {
+                if (m_fShowFlipCancelMeterTimer) {
+                    m_fStartFlipCancelMeterTimer = true;
+                    m_amDodging = true;
+                    m_timeDodged = car.GetWorldInfo().GetRealTimeSeconds();
+                }
             }
         });
 
@@ -250,6 +300,18 @@ void DodgeOverlayPlugin::RenderSettings() {
         };
     }
 
+    if (Checkbox("Show flip cancel momentum meter", &m_fShowFlipCancelMeter)) {
+        m_localCvars.at("dodgeoverlayShowFlipCancelMeter").setValue(m_fShowFlipCancelMeter);
+    }
+    if (m_fShowFlipCancelMeter) {
+        Combo("Which side should the meter go?", &m_flipCancelMeterPosition, m_flipCancelMeterPositionOptions, IM_ARRAYSIZE(m_flipCancelMeterPositionOptions));
+
+
+        if (Checkbox("Flip flip cancel momentum meter ends?", &m_fFlipFlipCancelMeter)) {
+            m_localCvars.at("dodgeoverlayFlipFlipCancelMeter").setValue(m_fFlipFlipCancelMeter);
+        }
+    }
+
     TextUnformatted("Dodge Overlay plugin settings");
 }
 
@@ -302,6 +364,43 @@ void DodgeOverlayPlugin::RenderImGui() {
         if (m_fShowNums) {
             drawList->AddText(stickCenter + ImVec2(-m_radius, m_radius), m_stickLocationColor, ("X: " + std::format("{:.2f}", m_stickLocation.x)).c_str());
             drawList->AddText(stickCenter + ImVec2(0, m_radius), m_stickLocationColor, ("Y: " + std::format("{:.2f}", m_stickLocation.y)).c_str());
+        }
+
+        // Flip Momentum Meter Section
+        if (m_fShowFlipCancelMeter) {
+            // draw the meter
+            switch (m_flipCancelMeterPosition) {
+            case FLIPCANCELMETERPOSITION::LEFT:
+                // border
+                drawList->AddRect(stickCenter + ImVec2{ -m_radius - 50.0f, -m_radius }, stickCenter + ImVec2{ -m_radius - 5.0f, m_radius }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+                // inside
+                drawList->AddRectFilled(stickCenter + ImVec2{ -m_radius - 49.0f, -m_radius + 1.0f }, stickCenter + ImVec2{ -m_radius - 6.0f, m_radius - 1.0f }, ImColor{ 1.0f, 1.0f, 1.0f, m_dodgeDeadzoneCrossedAlpha });
+                break;
+            case FLIPCANCELMETERPOSITION::TOP:
+                // border
+                drawList->AddRect(stickCenter + ImVec2{ -m_radius, -m_radius - 50.0f}, stickCenter + ImVec2{ m_radius, -m_radius - 5.0f }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+                // inside
+                drawList->AddRectFilled(stickCenter + ImVec2{ -m_radius, -m_radius - 49.0f }, stickCenter + ImVec2{ m_radius - 1.0f, -m_radius - 6.0f }, ImColor{ 1.0f, 1.0f, 1.0f, m_dodgeDeadzoneCrossedAlpha });
+                break;
+            case FLIPCANCELMETERPOSITION::RIGHT:
+                // border
+                drawList->AddRect(stickCenter + ImVec2{ m_radius + 5.0f, -m_radius }, stickCenter + ImVec2{ m_radius + 50.0f, m_radius }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+                // inside
+                drawList->AddRectFilled(stickCenter + ImVec2{ m_radius + 6.0f, -m_radius + 1.0f }, stickCenter + ImVec2{ m_radius + 49.0f, m_radius - 1.0f }, ImColor{ 1.0f, 1.0f, 1.0f, m_dodgeDeadzoneCrossedAlpha });
+                break;
+            case FLIPCANCELMETERPOSITION::INLAID:
+                // inside
+                drawList->AddRectFilled(stickCenter + ImVec2{ -m_radius + 1.0f, -m_radius + 1.0f }, stickCenter + ImVec2{ m_radius + 1.0f, m_radius + 1.0f }, ImColor{ 1.0f, 1.0f, 1.0f, m_dodgeDeadzoneCrossedAlpha });
+                break;
+            };
+
+            if (m_fStartFlipCancelMeterTimer) {
+                cvarManager->log("dingdong");
+                if (!m_amDodging) {
+                    cvarManager->log(std::format("DONE WITH THE DODGE. TIME IT TOOK: {}", m_theTime - m_timeDodged));
+                    m_fStartFlipCancelMeterTimer = false;
+                }
+            }           
         }
 
         PopStyleVar(2);

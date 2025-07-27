@@ -5,5 +5,5 @@
 #include "bakkesmod/plugin/bakkesmodplugin.h"
 #include "bakkesmod/plugin/PluginSettingsWindow.h"
 #include "bakkesmod/plugin/pluginwindow.h"
-
+#include "bakkesmod/wrappers/Engine/WorldInfoWrapper.h"
 #endif //PCH_H
