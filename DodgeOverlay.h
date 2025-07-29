@@ -1,6 +1,8 @@
 #ifndef DODGEOVERLAY_H
 #define DODGEOVERLAY_H
 
+// #define IMGUI_DEFINE_MATH_OPERATORS
+
 namespace DodgeOverlay {
     class DodgeOverlayPlugin : 
         public BakkesMod::Plugin::BakkesModPlugin,

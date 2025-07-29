@@ -372,30 +372,44 @@ void DodgeOverlayPlugin::RenderImGui() {
             switch (m_flipCancelMeterPosition) {
             case FLIPCANCELMETERPOSITION::LEFT:
                 // border
-                drawList->AddRect(stickCenter + ImVec2{ -m_radius - 50.0f, -m_radius }, stickCenter + ImVec2{ -m_radius - 5.0f, m_radius }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+                drawList->AddRect(stickCenter + ImVec2{ -m_radius - 50.0f, -m_radius}, stickCenter + ImVec2{ -m_radius - 5.0f, m_radius}, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+
                 // inside
                 drawList->AddRectFilled(stickCenter + ImVec2{ -m_radius - 49.0f, -m_radius + 1.0f }, stickCenter + ImVec2{ -m_radius - 6.0f, m_radius - 1.0f }, ImColor{ 1.0f, 1.0f, 1.0f, m_dodgeDeadzoneCrossedAlpha });
+
+                // draw line in middle
+                drawList->AddLine(stickCenter + ImVec2{ -m_radius - 50.0f, 0.0f }, stickCenter + ImVec2{ -m_radius - 5.0f, 0.0f }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
                 break;
             case FLIPCANCELMETERPOSITION::TOP:
                 // border
                 drawList->AddRect(stickCenter + ImVec2{ -m_radius, -m_radius - 50.0f}, stickCenter + ImVec2{ m_radius, -m_radius - 5.0f }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+
                 // inside
                 drawList->AddRectFilled(stickCenter + ImVec2{ -m_radius, -m_radius - 49.0f }, stickCenter + ImVec2{ m_radius - 1.0f, -m_radius - 6.0f }, ImColor{ 1.0f, 1.0f, 1.0f, m_dodgeDeadzoneCrossedAlpha });
+
+                // draw line in middle
+                drawList->AddLine(stickCenter + ImVec2{ 0.0f , -m_radius - 50.0f }, stickCenter + ImVec2{ 0.0f, -m_radius - 5.0f }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
                 break;
             case FLIPCANCELMETERPOSITION::RIGHT:
                 // border
-                drawList->AddRect(stickCenter + ImVec2{ m_radius + 5.0f, -m_radius }, stickCenter + ImVec2{ m_radius + 50.0f, m_radius }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+                drawList->AddRect(stickCenter + ImVec2{ m_radius + 5.0f, -m_radius}, stickCenter + ImVec2{ m_radius + 50.0f, m_radius}, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+
                 // inside
                 drawList->AddRectFilled(stickCenter + ImVec2{ m_radius + 6.0f, -m_radius + 1.0f }, stickCenter + ImVec2{ m_radius + 49.0f, m_radius - 1.0f }, ImColor{ 1.0f, 1.0f, 1.0f, m_dodgeDeadzoneCrossedAlpha });
+
+                // draw line in middle
+                drawList->AddLine(stickCenter + ImVec2{ m_radius + 5.0f, 0.0f }, stickCenter + ImVec2{ m_radius + 50.0f, 0.0f }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
                 break;
             case FLIPCANCELMETERPOSITION::INLAID:
                 // inside
                 drawList->AddRectFilled(stickCenter + ImVec2{ -m_radius + 1.0f, -m_radius + 1.0f }, stickCenter + ImVec2{ m_radius + 1.0f, m_radius + 1.0f }, ImColor{ 1.0f, 1.0f, 1.0f, m_dodgeDeadzoneCrossedAlpha });
+                
+                // draw line in middle
+                drawList->AddLine(stickCenter + ImVec2{ -m_radius, 0.0f }, stickCenter + ImVec2{ m_radius, 0.0f }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
                 break;
             };
 
             if (m_fStartFlipCancelMeterTimer) {
-                cvarManager->log("dingdong");
                 if (!m_amDodging) {
                     cvarManager->log(std::format("DONE WITH THE DODGE. TIME IT TOOK: {}", m_theTime - m_timeDodged));
                     m_fStartFlipCancelMeterTimer = false;
