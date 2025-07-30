@@ -384,6 +384,7 @@ void DodgeOverlayPlugin::RenderImGui() {
             const bool IN_MIN_DODGE_TIME = (time_diff - MIN_DODGE_TORQUE_TIME) < 0.0f;
             const float percSize = IN_MIN_DODGE_TIME ? 1.0f : (1.0f - (fmin(time_diff, DODGE_TORQUE_TIME) / DODGE_TORQUE_TIME));
             const float cancel_factor = 0.16f * std::clamp((static_cast<int>(fabs(m_stickLocation.y) * 100) - 94), 0, 6);
+
             // draw the meter
             switch (m_flipCancelMeterPosition) {
             case FLIPCANCELMETERPOSITION::LEFT:
@@ -417,6 +418,14 @@ void DodgeOverlayPlugin::RenderImGui() {
                             ImVec2 triRight = stickCenter + ImVec2{ -m_radius - 6.0f, 0.0f };
                             drawList->AddTriangleFilled(triLeft, triMiddle, triRight, m_flipCancelMeterAngMomNegSide);
                         }
+
+                        // draw min dodge torque time on bottom
+                        ImVec2 dodgeMinTimeLoc = stickCenter + ImVec2{ -m_radius - 49.0f, m_radius};
+                        drawList->AddText(dodgeMinTimeLoc, m_stickLocationColor, std::format("{:.2f}", fmax(0.0f, MIN_DODGE_TORQUE_TIME - time_diff)).c_str());
+
+                        // draw dodge torque time on top
+                        ImVec2 dodgeTimeLoc = stickCenter + ImVec2{ -m_radius - 49.0f, -m_radius - GetFontSize() };
+                        drawList->AddText(dodgeTimeLoc, m_stickLocationColor, std::format("{:.2f}", fmax(0.0f, DODGE_TORQUE_TIME - time_diff)).c_str());
                     } else {
                         // draw downward box
                         ImVec2 rectTopLeft = stickCenter + ImVec2{ -m_radius - 49.0f, 0.0f };
@@ -430,6 +439,14 @@ void DodgeOverlayPlugin::RenderImGui() {
                             ImVec2 right = stickCenter + ImVec2{ -m_radius - 6.0f, 0.0f };
                             drawList->AddTriangleFilled(left, middle, right, m_flipCancelMeterAngMomPosSide);
                         }
+
+                        // draw min dodge torque time on bottom
+                        ImVec2 dodgeMinTimeLoc = stickCenter + ImVec2{ -m_radius - 49.0f, -m_radius - GetFontSize() }; 
+                        drawList->AddText(dodgeMinTimeLoc, m_stickLocationColor, std::format("{:.2f}", fmax(0.0f, MIN_DODGE_TORQUE_TIME - time_diff)).c_str());
+
+                        // draw dodge torque time on top
+                        ImVec2 dodgeTimeLoc = stickCenter + ImVec2{ -m_radius - 49.0f, m_radius};
+                        drawList->AddText(dodgeTimeLoc, m_stickLocationColor, std::format("{:.2f}", fmax(0.0f, DODGE_TORQUE_TIME - time_diff)).c_str());
                     }
                 }
             }
