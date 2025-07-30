@@ -43,8 +43,10 @@ namespace DodgeOverlay {
         bool m_fShowFlipCancelMeterTimer = true;
         bool m_fStartFlipCancelMeterTimer = false;
         bool m_amDodging = false;
+        bool m_isDodgePositive = false;
         float m_timeDodged;
         float m_theTime;
+        float MIN_DODGE_TORQUE_TIME = 0.041f, DODGE_TORQUE_TIME = 0.65f; // defaults
 
         std::filesystem::path m_configurationFilePath = "cfg/dodgeoverlay.cfg";
 
