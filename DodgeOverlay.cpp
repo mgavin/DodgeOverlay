@@ -404,7 +404,7 @@ void DodgeOverlayPlugin::RenderImGui() {
                 ImVec2 leftLineRight = stickCenter + ImVec2{ -m_radius - 5.0f, 0.0f };
                 drawList->AddLine(leftLineLeft, leftLineRight, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
 
-                if (m_fStartFlipCancelMeterTimer || true) {
+                if (m_fStartFlipCancelMeterTimer) {
                     if (m_isDodgePositive) {
                         // draw upward box
                         ImVec2 rectTopLeft = stickCenter + (ImVec2{ -m_radius - 49.0f, -m_radius + 1.0f } * ImVec2{ 1.0f, percSize });
@@ -426,18 +426,29 @@ void DodgeOverlayPlugin::RenderImGui() {
                         // draw dodge torque time on top
                         ImVec2 dodgeTimeLoc = stickCenter + ImVec2{ -m_radius - 49.0f, -m_radius - GetFontSize() };
                         drawList->AddText(dodgeTimeLoc, m_stickLocationColor, std::format("{:.2f}", fmax(0.0f, DODGE_TORQUE_TIME - time_diff)).c_str());
+
+
+                        // basically "how long you've held cancel for"
+                        // or a time to indicate when you started cancelling?
+                        // a bar to indicate how long you've essentially been cancelling for
+
+                        // if dropped, the text is red?
+                        // if held, the text is green?
+
+
+
                     } else {
                         // draw downward box
                         ImVec2 rectTopLeft = stickCenter + ImVec2{ -m_radius - 49.0f, 0.0f };
                         ImVec2 rectBotRight = stickCenter + (ImVec2{ -m_radius - 6.0f, m_radius - 1.0f } * ImVec2{ 1.0f, percSize });
-                        drawList->AddRectFilled(rectTopLeft, rectBotRight, m_flipCancelMeterAngMomNegSide);
+                        drawList->AddRectFilled(rectTopLeft, rectBotRight, m_flipCancelMeterAngMomPosSide);
 
                         // draw upward arrow                        
                         if (m_stickLocation.y > 0.8f && !IN_MIN_DODGE_TIME) { // 0.8 is enough resolution to catch this
                             ImVec2 left = stickCenter + ImVec2{ -m_radius - 49.0f, 0.0f };
                             ImVec2 middle = stickCenter + ImVec2{ -m_radius - 27.5f, -m_radius * cancel_factor };
                             ImVec2 right = stickCenter + ImVec2{ -m_radius - 6.0f, 0.0f };
-                            drawList->AddTriangleFilled(left, middle, right, m_flipCancelMeterAngMomPosSide);
+                            drawList->AddTriangleFilled(left, middle, right, m_flipCancelMeterAngMomNegSide);
                         }
 
                         // draw min dodge torque time on bottom
