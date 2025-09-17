@@ -18,6 +18,7 @@ namespace DodgeOverlay {
         float m_radius = 1.0f;
         int m_circleSegments = 4;
         bool m_fShowNums = true;
+        bool m_fGrabMarkerInputs = false;
         bool m_fShowLastDodgeMarker = true;
         bool m_fShowLastDoubleJumpMarker = true;
         bool m_fClearDodgeMarker = false;

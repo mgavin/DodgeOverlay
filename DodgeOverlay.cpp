@@ -279,17 +279,21 @@ void DodgeOverlayPlugin::onLoad() {
                         m_dodgeDeadzoneRoll = m_dodgeDeadzone;
                     }
             }
-        });
+
+            if (m_fGrabMarkerInputs) {
+                m_lastDodgeMarker = m_stickLocation;
+                m_fGrabMarkerInputs = false;
+            }
+        });        
 
     gameWrapper->HookEvent("Function CarComponent_Dodge_TA.Active.BeginState",
         [this](std::string) {
           CarWrapper car = gameWrapper->GetLocalCar();
-          // somehow car.GetbJumped() is not good enough for
-          // checking if the local car has jumped at this point
+
           if (car && car.GetInput().Jumped) {
                 m_lastDodgeMarkerColor.Value.w = 1.0f;
-                m_lastDodgeMarker = m_stickLocation;
-                m_fClearDodgeMarker       = false;
+                m_fGrabMarkerInputs = true;
+                m_fClearDodgeMarker = false;
           }
     });
 
@@ -302,8 +306,8 @@ void DodgeOverlayPlugin::onLoad() {
           CarWrapper car = gameWrapper->GetLocalCar();
           if (car && car.GetInput().Jumped) {
                 m_lastDodgeMarkerColor.Value.w = 1.0f;
-                m_lastDodgeMarker = m_stickLocation;
-                m_fClearDodgeMarker       = false;
+                m_fGrabMarkerInputs = true;
+                m_fClearDodgeMarker = false;
           }
     });
 
