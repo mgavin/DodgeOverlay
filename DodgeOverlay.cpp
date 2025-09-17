@@ -27,10 +27,6 @@ void DodgeOverlayPlugin::onLoad() {
     m_dodgeDeadzone = gameWrapper->GetSettings().GetGamepadSettings().DodgeInputThreshold;
     m_configurationFilePath = gameWrapper->GetBakkesModPath() / m_configurationFilePath;
 
-    if(std::ifstream(m_configurationFilePath)) {
-        cvarManager->loadCfg(m_configurationFilePath.string());
-    }
-
 #pragma region register cvars
 #pragma region dodgeoverlayWinXPos
     CVarWrapper tempCvar = cvarManager->getCvar("dodgeoverlayWinXPos");
@@ -158,6 +154,10 @@ void DodgeOverlayPlugin::onLoad() {
     m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
 #pragma endregion
 #pragma endregion
+
+    if (std::ifstream(m_configurationFilePath)) {
+        cvarManager->loadCfg(m_configurationFilePath.string());
+    }
 
     //TODO: try HookEvent<T*>
     gameWrapper->HookEvent("Function TAGame.PlayerInput_TA.PlayerInput",
