@@ -1,6 +1,8 @@
 #ifndef DODGEOVERLAY_H
 #define DODGEOVERLAY_H
 
+// #define IMGUI_DEFINE_MATH_OPERATORS
+
 namespace DodgeOverlay {
     class DodgeOverlayPlugin : 
         public BakkesMod::Plugin::BakkesModPlugin,
@@ -44,6 +46,23 @@ namespace DodgeOverlay {
         bool m_fShowDodgeDeadzoneBorder = true;
         float m_dodgeDeadzoneBorderThickness = 1.0f;
         float m_dodgeDeadzoneCrossedAlpha = 0.1f;
+        bool m_fShowFlipCancelMeter = true;
+        bool m_fFlipFlipCancelMeter = false;
+        int m_flipCancelMeterPosition = 0;
+        enum FLIPCANCELMETERPOSITION { LEFT, TOP, RIGHT, INLAID };
+        const char* m_flipCancelMeterPositionOptions[4] = {"Left", "Top", "Right", "Inlaid"};
+        int m_flipCancelMeterWidth = 10;
+        int m_flipCancelMeterDistanceAway = 10;
+        ImColor m_flipCancelMeterAngMomPosSide = ImColor(0.0f, 1.0f, 0.0f, 0.5f);
+        ImColor m_flipCancelMeterAngMomNegSide = ImColor(1.0f, 0.0f, 0.0f, 0.5f);
+        ImColor m_flipCancelMeterTimerColor = ImColor(1.0f, 0.0f, 1.0f, 0.5f);
+        bool m_fShowFlipCancelMeterTimer = true;
+        bool m_fStartFlipCancelMeterTimer = false;
+        bool m_amDodging = false;
+        bool m_isDodgePositive = false;
+        float m_timeDodged;
+        float m_theTime;
+        float MIN_DODGE_TORQUE_TIME = 0.041f, DODGE_TORQUE_TIME = 0.65f; // defaults
 
         std::filesystem::path m_configurationFilePath = "cfg/dodgeoverlay.cfg";
 

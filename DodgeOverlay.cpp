@@ -19,6 +19,10 @@ inline ImVec2 operator-(const ImVec2 v1, const ImVec2 v2) {
     return ImVec2{ v1.x - v2.x, v1.y - v2.y };
 }
 
+inline ImVec2 operator*(const ImVec2 v1, const ImVec2 v2) {
+    return ImVec2{ v1.x * v2.x, v1.y * v2.y };
+}
+
 inline ImVec2 operator/(const ImVec2 v1, const int i) {
     return ImVec2{ v1.x / i, v1.y / i };
 }
@@ -153,7 +157,7 @@ void DodgeOverlayPlugin::onLoad() {
             writeCfg();
         });
     m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
-#pragma endregion 
+#pragma endregion
 #pragma region dodgeoverlayLastDodgeMarkerFadeTicks
     if((tempCvar = cvarManager->getCvar("dodgeoverlayLastDodgeMarkerFadeTicks")).IsNull()) {
         tempCvar = cvarManager->registerCvar("dodgeoverlayLastDodgeMarkerFadeTicks", "200");
@@ -189,7 +193,7 @@ void DodgeOverlayPlugin::onLoad() {
             writeCfg();
         });
     m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
-#pragma endregion 
+#pragma endregion
 #pragma region dodgeoverlayDodgeDeadzoneColor
     if((tempCvar = cvarManager->getCvar("dodgeoverlayDodgeDeadzoneColor")).IsNull()) {
         tempCvar = cvarManager->registerCvar("dodgeoverlayDodgeDeadzoneColor", "(1.0, 1.0, 1.0, 1.0)");
@@ -258,6 +262,39 @@ void DodgeOverlayPlugin::onLoad() {
         });
     m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
 #pragma endregion
+#pragma region dodgeoverlayShowFlipCancelMeter
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayShowFlipCancelMeter")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayShowFlipCancelMeter", "1");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            m_fShowFlipCancelMeter = now.getBoolValue();
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
+#pragma region dodgeoverlayFlipFlipCancelMeter
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayFlipFlipCancelMeter")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayFlipFlipCancelMeter", "0");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            m_fFlipFlipCancelMeter = now.getBoolValue();
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
+#pragma region dodgeoverlayShowFlipCancelMeterPosition
+    if((tempCvar = cvarManager->getCvar("dodgeoverlayShowFlipCancelMeterPosition")).IsNull()) {
+        tempCvar = cvarManager->registerCvar("dodgeoverlayShowFlipCancelMeterPosition", "0");
+    }
+    tempCvar.addOnValueChanged(
+        [this](std::string old, CVarWrapper now) {
+            m_flipCancelMeterPosition = now.getIntValue();
+            writeCfg();
+        });
+    m_localCvars.insert({tempCvar.getCVarName(), tempCvar});
+#pragma endregion
 #pragma endregion
 
     if (std::ifstream(m_configurationFilePath)) {
@@ -278,19 +315,36 @@ void DodgeOverlayPlugin::onLoad() {
                         m_stickLocation.x = std::max(std::min(m_stickLocation.x, 1.0f), -1.0f);
                         m_dodgeDeadzoneRoll = m_dodgeDeadzone;
                     }
-            }
 
-            if (m_fGrabMarkerInputs) {
-                m_lastDodgeMarker = m_stickLocation;
-                m_fGrabMarkerInputs = false;
+                    m_amDodging = car.IsDodging();
+                    m_theTime = car.GetWorldInfo().GetTimeSeconds();
+                    DodgeComponentWrapper dcw = car.GetDodgeComponent();
+                    if (dcw) {
+                        DODGE_TORQUE_TIME = dcw.GetDodgeTorqueTime();
+                        MIN_DODGE_TORQUE_TIME = dcw.GetMinDodgeTorqueTime();
+                    }
+
+                    if (m_fGrabMarkerInputs) {
+                        m_lastDodgeMarker = m_stickLocation;
+                        m_fGrabMarkerInputs = false;
+                    }
             }
-        });        
+        });
 
     gameWrapper->HookEvent("Function CarComponent_Dodge_TA.Active.BeginState",
         [this](std::string) {
           CarWrapper car = gameWrapper->GetLocalCar();
 
           if (car && car.GetInput().Jumped) {
+                if (m_fShowFlipCancelMeterTimer) {
+                    if (!(fabs(m_stickLocation.y - 0.0f) <= 10e-6)) {
+                        m_fStartFlipCancelMeterTimer = true;
+                        m_isDodgePositive = m_stickLocation.y > 0.0f ? true : false;
+                    }
+                    m_amDodging = true;
+                    m_timeDodged = car.GetWorldInfo().GetTimeSeconds();
+                }
+
                 m_lastDodgeMarkerColor.Value.w = 1.0f;
                 m_fGrabMarkerInputs = true;
                 m_fClearDodgeMarker = false;
@@ -441,6 +495,17 @@ void DodgeOverlayPlugin::RenderSettings() {
             color.A = m_lastDodgeMarkerColor.Value.w;
             m_localCvars.at("dodgeoverlayLastDodgeMarkerColor").setValue(color);
         };
+		}
+    if (Checkbox("Show flip cancel momentum meter", &m_fShowFlipCancelMeter)) {
+        m_localCvars.at("dodgeoverlayShowFlipCancelMeter").setValue(m_fShowFlipCancelMeter);
+    }
+    if (m_fShowFlipCancelMeter) {
+        Combo("Which side should the meter go?", &m_flipCancelMeterPosition, m_flipCancelMeterPositionOptions, IM_ARRAYSIZE(m_flipCancelMeterPositionOptions));
+
+
+        if (Checkbox("Flip flip cancel momentum meter ends?", &m_fFlipFlipCancelMeter)) {
+            m_localCvars.at("dodgeoverlayFlipFlipCancelMeter").setValue(m_fFlipFlipCancelMeter);
+        }
     }
 
     TextUnformatted("Dodge Overlay plugin settings");
@@ -528,6 +593,129 @@ void DodgeOverlayPlugin::RenderImGui() {
                         drawList->AddRectFilled(stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius - m_lastDodgeMarkerScale, -m_lastDodgeMarker.y * m_radius - m_lastDodgeMarkerScale), stickCenter + ImVec2(m_lastDodgeMarker.x * m_radius + m_lastDodgeMarkerScale, -m_lastDodgeMarker.y * m_radius + m_lastDodgeMarkerScale), m_lastDodgeMarkerColor, 0.0f, 15);
                         break;
               }
+				}
+        // Flip Momentum Meter Section
+        if (m_fShowFlipCancelMeter) {
+            const float time_diff = m_theTime - m_timeDodged;
+            const bool IN_MIN_DODGE_TIME = (time_diff - MIN_DODGE_TORQUE_TIME) < 0.0f;
+            const float percSize = IN_MIN_DODGE_TIME ? 1.0f : (1.0f - (fmin(time_diff, DODGE_TORQUE_TIME) / DODGE_TORQUE_TIME));
+            const float cancel_factor = 0.16f * std::clamp((static_cast<int>(fabs(m_stickLocation.y) * 100) - 94), 0, 6);
+
+            // draw the meter
+            switch (m_flipCancelMeterPosition) {
+            case FLIPCANCELMETERPOSITION::LEFT:
+            {
+                // border
+                ImVec2 leftBorderTopLeft = stickCenter + ImVec2{ -m_radius - 50.0f, -m_radius};
+                ImVec2 leftBorderBotRight = stickCenter + ImVec2{ -m_radius - 5.0f, m_radius};
+                drawList->AddRect(leftBorderTopLeft, leftBorderBotRight, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+
+                // inside
+                ImVec2 leftInnerTopLeft = stickCenter + ImVec2{ -m_radius - 49.0f, -m_radius + 1.0f };
+                ImVec2 leftInnerBotRight = stickCenter + ImVec2{ -m_radius - 6.0f, m_radius - 1.0f };
+                drawList->AddRectFilled(leftInnerTopLeft, leftInnerBotRight, ImColor{ 1.0f, 1.0f, 1.0f, m_dodgeDeadzoneCrossedAlpha });
+
+                // draw line in middle
+                ImVec2 leftLineLeft = stickCenter + ImVec2{ -m_radius - 50.0f, 0.0f };
+                ImVec2 leftLineRight = stickCenter + ImVec2{ -m_radius - 5.0f, 0.0f };
+                drawList->AddLine(leftLineLeft, leftLineRight, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+
+                if (m_fStartFlipCancelMeterTimer) {
+                    if (m_isDodgePositive) {
+                        // draw upward box
+                        ImVec2 rectTopLeft = stickCenter + (ImVec2{ -m_radius - 49.0f, -m_radius + 1.0f } * ImVec2{ 1.0f, percSize });
+                        ImVec2 rectBotRight = stickCenter + ImVec2{ -m_radius - 6.0f, 0.0f };
+                        drawList->AddRectFilled(rectTopLeft, rectBotRight, m_flipCancelMeterAngMomPosSide);
+
+                        // draw downward arrow
+                        if (m_stickLocation.y < -0.8f && !IN_MIN_DODGE_TIME) { // -0.8 is enough resolution to catch this
+                            ImVec2 triLeft = stickCenter + ImVec2{ -m_radius - 49.0f, 0.0f };
+                            ImVec2 triMiddle = stickCenter + ImVec2{ -m_radius - 27.5f, m_radius * cancel_factor };
+                            ImVec2 triRight = stickCenter + ImVec2{ -m_radius - 6.0f, 0.0f };
+                            drawList->AddTriangleFilled(triLeft, triMiddle, triRight, m_flipCancelMeterAngMomNegSide);
+                        }
+
+                        // draw min dodge torque time on bottom
+                        ImVec2 dodgeMinTimeLoc = stickCenter + ImVec2{ -m_radius - 49.0f, m_radius};
+                        drawList->AddText(dodgeMinTimeLoc, m_stickLocationColor, std::format("{:.2f}", fmax(0.0f, MIN_DODGE_TORQUE_TIME - time_diff)).c_str());
+
+                        // draw dodge torque time on top
+                        ImVec2 dodgeTimeLoc = stickCenter + ImVec2{ -m_radius - 49.0f, -m_radius - GetFontSize() };
+                        drawList->AddText(dodgeTimeLoc, m_stickLocationColor, std::format("{:.2f}", fmax(0.0f, DODGE_TORQUE_TIME - time_diff)).c_str());
+
+
+                        // basically "how long you've held cancel for"
+                        // or a time to indicate when you started cancelling?
+                        // a bar to indicate how long you've essentially been cancelling for
+
+                        // if dropped, the text is red?
+                        // if held, the text is green?
+
+
+
+                    } else {
+                        // draw downward box
+                        ImVec2 rectTopLeft = stickCenter + ImVec2{ -m_radius - 49.0f, 0.0f };
+                        ImVec2 rectBotRight = stickCenter + (ImVec2{ -m_radius - 6.0f, m_radius - 1.0f } * ImVec2{ 1.0f, percSize });
+                        drawList->AddRectFilled(rectTopLeft, rectBotRight, m_flipCancelMeterAngMomPosSide);
+
+                        // draw upward arrow
+                        if (m_stickLocation.y > 0.8f && !IN_MIN_DODGE_TIME) { // 0.8 is enough resolution to catch this
+                            ImVec2 left = stickCenter + ImVec2{ -m_radius - 49.0f, 0.0f };
+                            ImVec2 middle = stickCenter + ImVec2{ -m_radius - 27.5f, -m_radius * cancel_factor };
+                            ImVec2 right = stickCenter + ImVec2{ -m_radius - 6.0f, 0.0f };
+                            drawList->AddTriangleFilled(left, middle, right, m_flipCancelMeterAngMomNegSide);
+                        }
+
+                        // draw min dodge torque time on bottom
+                        ImVec2 dodgeMinTimeLoc = stickCenter + ImVec2{ -m_radius - 49.0f, -m_radius - GetFontSize() };
+                        drawList->AddText(dodgeMinTimeLoc, m_stickLocationColor, std::format("{:.2f}", fmax(0.0f, MIN_DODGE_TORQUE_TIME - time_diff)).c_str());
+
+                        // draw dodge torque time on top
+                        ImVec2 dodgeTimeLoc = stickCenter + ImVec2{ -m_radius - 49.0f, m_radius};
+                        drawList->AddText(dodgeTimeLoc, m_stickLocationColor, std::format("{:.2f}", fmax(0.0f, DODGE_TORQUE_TIME - time_diff)).c_str());
+                    }
+                }
+            }
+            break;
+            case FLIPCANCELMETERPOSITION::TOP:
+                // determine color
+                std::swap(m_flipCancelMeterAngMomNegSide, m_flipCancelMeterAngMomPosSide);
+
+                // border
+                drawList->AddRect(stickCenter + ImVec2{ -m_radius, -m_radius - 50.0f}, stickCenter + ImVec2{ m_radius, -m_radius - 5.0f }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+
+                // inside
+                drawList->AddRectFilled(stickCenter + ImVec2{ -m_radius, -m_radius - 49.0f }, stickCenter + ImVec2{ m_radius - 1.0f, -m_radius - 6.0f }, ImColor{ 1.0f, 1.0f, 1.0f, m_dodgeDeadzoneCrossedAlpha });
+
+                // draw line in middle
+                drawList->AddLine(stickCenter + ImVec2{ 0.0f , -m_radius - 50.0f }, stickCenter + ImVec2{ 0.0f, -m_radius - 5.0f }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+                break;
+            case FLIPCANCELMETERPOSITION::RIGHT:
+                // border
+                drawList->AddRect(stickCenter + ImVec2{ m_radius + 5.0f, -m_radius}, stickCenter + ImVec2{ m_radius + 50.0f, m_radius}, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+
+                // inside
+                drawList->AddRectFilled(stickCenter + ImVec2{ m_radius + 6.0f, -m_radius + 1.0f }, stickCenter + ImVec2{ m_radius + 49.0f, m_radius - 1.0f }, ImColor{ 1.0f, 1.0f, 1.0f, m_dodgeDeadzoneCrossedAlpha });
+
+                // draw line in middle
+                drawList->AddLine(stickCenter + ImVec2{ m_radius + 5.0f, 0.0f }, stickCenter + ImVec2{ m_radius + 50.0f, 0.0f }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+                break;
+            case FLIPCANCELMETERPOSITION::INLAID:
+                // inside
+                drawList->AddRectFilled(stickCenter + ImVec2{ -m_radius + 1.0f, -m_radius + 1.0f }, stickCenter + ImVec2{ m_radius + 1.0f, m_radius + 1.0f }, ImColor{ 1.0f, 1.0f, 1.0f, m_dodgeDeadzoneCrossedAlpha });
+
+                // draw line in middle
+                drawList->AddLine(stickCenter + ImVec2{ -m_radius, 0.0f }, stickCenter + ImVec2{ m_radius, 0.0f }, ImColor{ 1.0f, 1.0f, 1.0f, 1.0f });
+                break;
+            };
+
+            if (m_fStartFlipCancelMeterTimer) {
+                if (!m_amDodging) {
+                    cvarManager->log(std::format("DONE WITH THE DODGE. TIME IT TOOK: {}", m_theTime - m_timeDodged));
+                    m_fStartFlipCancelMeterTimer = false;
+                }
+            }
         }
 
         PopStyleVar(2);
