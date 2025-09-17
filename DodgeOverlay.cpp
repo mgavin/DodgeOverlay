@@ -329,13 +329,15 @@ void DodgeOverlayPlugin::onLoad() {
                         m_fGrabMarkerInputs = false;
                     }
             }
-        });
-
+        });       
     gameWrapper->HookEvent("Function CarComponent_Dodge_TA.Active.BeginState",
         [this](std::string) {
-          CarWrapper car = gameWrapper->GetLocalCar();
+            if (!m_fShowLastDodgeMarker) {
+                return;
+            }
 
-          if (car && car.GetInput().Jumped) {
+            CarWrapper car = gameWrapper->GetLocalCar();
+            if (car && car.GetInput().Jumped) {
                 if (m_fShowFlipCancelMeterTimer) {
                     if (!(fabs(m_stickLocation.y - 0.0f) <= 10e-6)) {
                         m_fStartFlipCancelMeterTimer = true;
@@ -344,35 +346,35 @@ void DodgeOverlayPlugin::onLoad() {
                     m_amDodging = true;
                     m_timeDodged = car.GetWorldInfo().GetTimeSeconds();
                 }
+            }
 
+            if (car && car.GetInput().Jumped) {
                 m_lastDodgeMarkerColor.Value.w = 1.0f;
                 m_fGrabMarkerInputs = true;
                 m_fClearDodgeMarker = false;
-          }
-    });
-
+            }
+        });
     gameWrapper->HookEvent("Function CarComponent_DoubleJump_TA.Active.BeginState",
         [this](std::string) {
-          if (!m_fShowLastDoubleJumpMarker) {
-            return;
-          }
+            if (!m_fShowLastDoubleJumpMarker) {
+                return;
+            }
 
-          CarWrapper car = gameWrapper->GetLocalCar();
-          if (car && car.GetInput().Jumped) {
+            CarWrapper car = gameWrapper->GetLocalCar();
+            if (car && car.GetInput().Jumped) {
                 m_lastDodgeMarkerColor.Value.w = 1.0f;
                 m_fGrabMarkerInputs = true;
                 m_fClearDodgeMarker = false;
-          }
-    });
-
+            }
+        });
     gameWrapper->HookEvent("Function CarComponent_Jump_TA.Active.BeginState",
         [this](std::string) {
-          CarWrapper car = gameWrapper->GetLocalCar();
-          if (car && car.GetInput().Jumped) {
+            CarWrapper car = gameWrapper->GetLocalCar();
+            if (car && car.GetInput().Jumped) {
                 if (m_fClearLastDodgeMarkerAfterJumping && !m_fIsInGameReplay) {
-                      m_fClearDodgeMarker = true;
+                    m_fClearDodgeMarker = true;
                 }
-          }
+            }
         });
     gameWrapper->HookEvent("Function GameEvent_Soccar_TA.ReplayPlayback.BeginState",
         [this](std::string) {
@@ -459,11 +461,11 @@ void DodgeOverlayPlugin::RenderSettings() {
     if (Checkbox("Mark on overlay where last dodge happened", &m_fShowLastDodgeMarker)) {
         m_localCvars.at("dodgeoverlayShowLastDodgeMarker").setValue(m_fShowLastDodgeMarker);
     }
-    if (m_fShowLastDodgeMarker) {
-        SameLine();
-        if (Checkbox("(including double jumps)", &m_fShowLastDoubleJumpMarker)) {
-            m_localCvars.at("dodgeoverlayShowLastDoubleJumpMarker").setValue(m_fShowLastDoubleJumpMarker);
-        }
+    SameLine();
+    if (Checkbox("Mark double jumps", &m_fShowLastDoubleJumpMarker)) {
+        m_localCvars.at("dodgeoverlayShowLastDoubleJumpMarker").setValue(m_fShowLastDoubleJumpMarker);
+    }
+    if (m_fShowLastDodgeMarker || m_fShowLastDoubleJumpMarker) {
         if (Checkbox("Clear mark after jumping", &m_fClearLastDodgeMarkerAfterJumping)) {
             m_localCvars.at("dodgeoverlayClearLastDodgeMarkerAfterJumping").setValue(m_fClearLastDodgeMarkerAfterJumping);
         }
