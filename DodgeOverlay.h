@@ -23,7 +23,7 @@ namespace DodgeOverlay {
         bool m_fGrabMarkerInputs = false;
         bool m_fShowLastDodgeMarker = true;
         bool m_fShowLastDoubleJumpMarker = true;
-        bool m_fClearDodgeMarker = false;
+        bool m_fClearDodgeMarker = true;
         bool m_fClearLastDodgeMarkerAfterJumping = true;
         bool m_fFadeLastDodgeMarker = false;
         bool m_fIsInGameReplay = false;
