@@ -547,7 +547,7 @@ void DodgeOverlayPlugin::RenderImGui() {
         ImDrawList* drawList = GetWindowDrawList();
         ImVec2 p = GetCursorScreenPos();
 
-        ImVec2 stickCenter = p + ImVec2(m_windowSize.x / 2, m_windowSize.x / 2);    // Because I need only square center position excluding outputs nums height
+        ImVec2 stickCenter = p + ImVec2(m_windowSize.x / 2, m_windowSize.y / 2);    // Because I need only square center position excluding outputs nums height
         drawList->AddQuad(stickCenter + ImVec2(-m_radius, m_radius), stickCenter + ImVec2(m_radius, m_radius), stickCenter + ImVec2(m_radius, -m_radius), stickCenter + ImVec2(-m_radius, -m_radius), m_stickBorderColor);
         drawList->AddCircleFilled(stickCenter + ImVec2(m_stickLocation.x * m_radius, -m_stickLocation.y * m_radius), m_radius * m_stickLocationSize / 100, m_stickLocationColor, 0);
         float tempDodgeDeadzone = m_dodgeDeadzone - m_dodgeDeadzoneRoll;
@@ -714,7 +714,6 @@ void DodgeOverlayPlugin::RenderImGui() {
 
             if (m_fStartFlipCancelMeterTimer) {
                 if (!m_amDodging) {
-                    cvarManager->log(std::format("DONE WITH THE DODGE. TIME IT TOOK: {}", m_theTime - m_timeDodged));
                     m_fStartFlipCancelMeterTimer = false;
                 }
             }
